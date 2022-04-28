@@ -1,0 +1,20 @@
+,FII DERIVATIVES STATISTICS FOR 23-Mar-2022,Unnamed: 1,Unnamed: 2,Unnamed: 3,Unnamed: 4,Unnamed: 5,Unnamed: 6
+0,,BUY,BUY,SELL,SELL,OPEN INTEREST AT THE END OF THE DAY,
+1,,No. of contracts,Amt in Crores,No. of contracts,Amt in Crores,No. of contracts,Amt in Crores
+2,INDEX FUTURES,51894,4614.52,64521,5760.93,232876,20401.83
+3,INDEX OPTIONS,8104844,729840.09,8112809,730627.70,1861139,162511.60
+4,STOCK FUTURES,225982,16230.10,232976,16810.60,2031329,139528.88
+5,STOCK OPTIONS,413982,28963.88,419235,29335.11,322484,23033.15
+6,,,,,,,
+7,,,,,,,
+8,,,,,,,
+9,,,,,,,
+10,Notes:,,,,,,
+11,,,,,,,
+12,Both buy and sell positions have been considered,,,,,,
+13,Options Value (Buy/Sell) = Strike price * Qty,,,,,,
+14,Futures Value (Buy/Sell) = Traded Price * Qty,,,,,,
+15,,,,,,,
+16,Value & Open Interest at the end of day:,,,,,,
+17,Options Value (End of day) = Underlying Close Price * Qty,,,,,,
+18,Futures Value (End of day) = Closing Futures Price * Qty  (closing price is the daily settlement price of futures contracts),,,,,,
