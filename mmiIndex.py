@@ -1,9 +1,10 @@
-from fileinput import filename
 import streamlit as st
 import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta, date
+
+import plotly.graph_objects as go
 
 # Custom imports
 import nsepyData as nd
@@ -45,20 +46,37 @@ def get_market_activity(data_dates):
         else:
             pass
 
-# Market Activity Data 
 #get_market_activity(nifty50)
 
-@st.cache(suppress_st_warning=True)
+# Market Activity Data Processing
+#@st.cache(suppress_st_warning=True)
 def market_activity(data_dates):
-    market_activity_list = []
+    ma_adv_list = []
+    ma_dec_list = []
     for i in data_dates.index:
         filename = 'data/mactivity/MA{}{}{}.csv'.format(i.strftime("%d"), i.strftime("%m"), i.strftime("%y"))
-        market_activity = pd.read_csv(filename)
-        st.write(market_activity)
-        market_activity_list.append(market_activity.loc[market_activity.INDEX == 'ADVANCES'])
-    st.write(market_activity_list)
+        ma_data = pd.read_csv(filename)
+        #st.write(filename, ma_data)
+        ma_adv = ma_data['PREVIOUS CLOSE'].loc[ma_data['INDEX'] == 'ADVANCES']
+        ma_dec = ma_data['PREVIOUS CLOSE'].loc[ma_data['INDEX'] == 'DECLINES']
+        #ma_adv = ma_data.loc[ma_data['INDEX'] == 'ADVANCES']
+        #ma_dec = ma_data.loc[ma_data['INDEX'] == 'DECLINES']
+        ma_adv_list.append(ma_adv.values[0])
+        ma_dec_list.append(ma_dec.values[0])
+    ma_df = pd.DataFrame({'ADVANCES': ma_adv_list,
+        'DECLINES': ma_dec_list
+    }, index=data_dates.index)
+    st.write(ma_df)
+    return ma_df
 
 market_activity(nifty50)
+ma_data = pd.read_csv('data/mactivity/MA030122.csv')
+ma_adv = ma_data['PREVIOUS CLOSE'].loc[ma_data['INDEX'] == 'ADVANCES']
+ma_dec = ma_data['PREVIOUS CLOSE'].loc[ma_data['INDEX'] == 'DECLINES']
+ma_adv_list = []
+ma_dec_list = []
+ma_adv_list.append(ma_adv.values[0])
+#st.write(ma_adv_list)
 
 @st.cache()
 def fii_activity(data_dates):
@@ -83,7 +101,7 @@ def methodology(df):
     df['Rolling StdDev'] = df.iloc[:, -3].rolling(45).std()
     # Normalizing Data between 0 to 100
     df['Normalized'] = 100 * ((df['Rolling StdDev'] - df['Rolling StdDev'].min()) / (df['Rolling StdDev'].max() - df['Rolling StdDev'].min()))
-    st.write(df['Normalized'].tail())
+    #st.write(df['Normalized'].tail())
     return df['Normalized']
 
 # Run this function to get data
@@ -95,22 +113,25 @@ def methodology(df):
 # FII Activity
 fii_activity = pd.read_csv('data/fii_activity.csv', index_col='Date', parse_dates=['Date'])
 #st.line_chart(fii_activity)
-st.line_chart(methodology(fii_activity))
-
+mmi_fii = methodology(fii_activity)
+#st.line_chart(mmi_fii.tail())
 
 # Volatility and Skew
 indiavix = pd.read_csv('data/indiavix.csv', index_col='Date', parse_dates=['Date'])
 indiavix['Rolling'] = indiavix['Close'].rolling(45).mean()
 #st.write(indiavix['Rolling'].tail())
+mmi_volatility = methodology(indiavix)
+#st.write(mmi_volatility.tail())
 
 # Momentum
 # 30D & 90D EMA of Nifty 50
 nifty50['30D EMA'] = nifty50['Close'].ewm(span=30, adjust=False).mean()
 nifty50['90D EMA'] = nifty50['Close'].ewm(span=90, adjust=False).mean()
 nifty50['Momentum'] = (nifty50['90D EMA'] - nifty50['30D EMA']) / nifty50['90D EMA']
-#st.write(nifty50['Momentum'])
+#st.write('MMI Momentum', nifty50['Momentum'])
 #st.line_chart(nifty50.iloc[:, [3, -3, -2]])
-st.line_chart(methodology(nifty50))
+mmi_momentum = methodology(nifty50)
+#st.line_chart(mmi_momentum.tail())
 
 # Market Breadth -> Modifies Arms Index
 #adratio = pd.read_html('https://www1.nseindia.com/products/content/equities/equities/historical_advdeclines.htm')
@@ -122,6 +143,31 @@ st.line_chart(methodology(nifty50))
 
 # Demand for Gold
 
+# MMI Calculation
+mmi = 1/3*(mmi_fii + mmi_momentum)
+st.write('MMI Data', mmi.tail())
+
+# Vizualization
+# Gauge Charts -> https://plotly.com/python/reference/indicator/
+fig = go.Figure(go.Indicator(
+    mode = "gauge+number+delta",
+    delta = {'reference': mmi[-2]},
+    value = mmi[-1],
+    domain = {'x': [0, 1], 'y': [0, 1]},
+    title = {'text': "Risk-o-Meter"},
+    gauge = {'axis': {'range': [None, 100],
+                    'tickmode': 'array',
+                    'ticktext': ['Extreme Fear', 'Fear', '', 'Greed', 'Extreme Greed'],
+                    'tickvals': [0, 30, 50, 70, 100]},
+            'steps': [
+                {'range': [0, 30], 'color': "lightgreen", 'name': 'Fear'},
+                {'range': [30, 50], 'color': "rgb(255,200,0)", 'name': 'Risk'},
+                {'range': [50, 70], 'color': "orange"},
+                {'range': [70, 100], 'color': "red"}]}))
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.write(mmi_fii.tail(), mmi_momentum.tail(), mmi_volatility.tail())
 
 def get_dates():
     # Holiday List From NSE
